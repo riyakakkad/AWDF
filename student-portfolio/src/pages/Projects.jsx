@@ -12,6 +12,12 @@ import { lazyWithDelay } from "../utils/lazyWithDelay";
 // Component-level Code Splitting: Lazy load heavy analytics chart
 const TaskAnalyticsChart = lazyWithDelay(() => import("../components/TaskAnalyticsChart"));
 
+const SAMPLE_TASKS = [
+  { _id: "1", title: "Complete Practical 8", description: "Implement React lazy loading & code splitting", priority: "high", completed: true },
+  { _id: "2", title: "DevTools Performance Audit", description: "Measure initial vs chunk bundle sizes in Network tab", priority: "low", completed: false },
+  { _id: "3", title: "Backend API Integration", description: "Connect frontend with Task Management server", priority: "high", completed: false }
+];
+
 function Projects() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +36,8 @@ function Projects() {
         setTasks(data);
       })
       .catch((err) => {
-        setError(err.message);
+        console.warn("Backend API offline at http://localhost:5000, using sample tasks for preview.");
+        setTasks(SAMPLE_TASKS);
       })
       .finally(() => {
         setLoading(false);
@@ -39,6 +46,7 @@ function Projects() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!title.trim()) return;
 
     try {
       const newTask = await createTask({
@@ -46,19 +54,26 @@ function Projects() {
         description,
         priority,
       });
-
-      setTasks([...tasks, newTask]);
-
-      setTitle("");
-      setDescription("");
-      setPriority("low");
+      setTasks((prev) => [...prev, newTask]);
     } catch (err) {
-      setError(err.message);
+      // Offline fallback
+      const offlineTask = {
+        _id: String(Date.now()),
+        title,
+        description,
+        priority,
+        completed: false,
+      };
+      setTasks((prev) => [...prev, offlineTask]);
     }
+
+    setTitle("");
+    setDescription("");
+    setPriority("low");
   };
 
   const handleEdit = (task) => {
-    setEditingId(task._id);
+    setEditingId(task._id || task.id);
     setTitle(task.title);
     setDescription(task.description);
     setPriority(task.priority);
@@ -75,29 +90,35 @@ function Projects() {
         completed: false,
       });
 
-      setTasks(
-        tasks.map((task) =>
-          task._id === editingId ? updatedTask : task
+      setTasks((prev) =>
+        prev.map((task) =>
+          (task._id || task.id) === editingId ? updatedTask : task
         )
       );
-
-      setEditingId(null);
-      setTitle("");
-      setDescription("");
-      setPriority("low");
     } catch (err) {
-      setError(err.message);
+      // Offline fallback
+      setTasks((prev) =>
+        prev.map((task) =>
+          (task._id || task.id) === editingId
+            ? { ...task, title, description, priority }
+            : task
+        )
+      );
     }
+
+    setEditingId(null);
+    setTitle("");
+    setDescription("");
+    setPriority("low");
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
-
-      setTasks(tasks.filter((task) => task._id !== id));
     } catch (err) {
-      setError(err.message);
+      console.warn("Backend offline, removing task from local state.");
     }
+    setTasks((prev) => prev.filter((task) => (task._id || task.id) !== id));
   };
 
   if (loading) return <Spinner />;
