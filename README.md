@@ -4,6 +4,40 @@ This repository contains practical implementations and coursework for Advanced W
 
 ---
 
+## Practical 11: Containerization with Docker and Docker Compose
+
+Applied **full-stack containerization** and multi-service orchestration across the React frontend, Express/Node.js API, and MongoDB database using Docker and Docker Compose.
+
+### Key Deliverables:
+- **Multi-Stage Frontend Dockerfile (`student-portfolio/Dockerfile`):** Stage 1 builds React/Vite assets; Stage 2 serves the production bundle via high-performance **Nginx Alpine** (~25MB) with SPA routing fallback (`nginx.conf`).
+- **Backend Dockerfile (`server/Dockerfile`):** Containerized Node.js 20 Alpine environment with environment-aware connection pooling and health retry logic.
+- **Docker Compose Orchestration (`docker-compose.yml`):** Single-file specification managing all 3 microservices:
+  - `mongo`: MongoDB 7.0 database with persistent storage volume (`mongo-data`) and automated healthcheck.
+  - `backend`: Node/Express REST API on port `5000:5000`, communicating with `mongo` over internal bridge network.
+  - `frontend`: React SPA served via Nginx on ports `3000:80` and `5173:80`.
+- **Internal Docker Network (`awdf-network`):** Isolated bridge network allowing containers to communicate using internal DNS hostnames (`mongodb://mongo:27017/task_management_db`).
+- **Single-Command Startup:** Launch the complete full-stack environment with `docker-compose up --build -d` with zero manual steps in between.
+
+### Running with Docker Compose:
+```bash
+# Build images and start all 3 services in detached mode
+docker-compose up --build -d
+
+# Verify container status and health
+docker-compose ps
+
+# View live container logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+For full architecture diagrams, network topology, and lab report, see [docs/PRACTICAL_11_LAB_REPORT.md](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/docs/PRACTICAL_11_LAB_REPORT.md).  
+Submission Word Document: [PRACTICAL_11.docx](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/PRACTICAL_11.docx).
+
+---
+
 ## Practical 10: Asynchronous Background Processing with Node.js EventEmitter
 
 Implemented **event-driven architecture and asynchronous background processing** using Node.js's native `EventEmitter` module (`events`) to decouple notification processing from the HTTP request-response cycle.

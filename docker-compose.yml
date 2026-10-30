@@ -1,0 +1,62 @@
+services:
+  # 1. MongoDB Database Service
+  mongo:
+    image: mongo:7.0
+    container_name: awdf-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - awdf-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # 2. Node/Express Backend API Service
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: awdf-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/task_management_db
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - awdf-network
+
+  # 3. React Frontend Service (Served with Nginx)
+  frontend:
+    build:
+      context: ./student-portfolio
+      dockerfile: Dockerfile
+    container_name: awdf-frontend
+    restart: always
+    ports:
+      - "3000:80"
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - awdf-network
+
+# Persistent storage volume for MongoDB database
+volumes:
+  mongo-data:
+    driver: local
+
+# Internal Docker network for isolated inter-container communication
+networks:
+  awdf-network:
+    driver: bridge

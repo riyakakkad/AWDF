@@ -47,23 +47,41 @@ app.get('/', (req, res) => {
 // Mount Task Routes
 app.use('/tasks', taskRoutes);
 
-// MongoDB connection logic with automated Memory Server fallback
+// MongoDB connection logic with automated container retry & fallback
 let serverInstance;
 
 async function startServer() {
-  try {
-    console.log('Connecting to MongoDB...');
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 2000
-    });
-    console.log(`Connected to MongoDB database at: ${MONGODB_URI}`);
-  } catch (err) {
-    console.log('Local MongoDB connection failed/not found. Starting mongodb-memory-server fallback...');
-    const { MongoMemoryServer } = require('mongodb-memory-server');
-    const mongoServer = await MongoMemoryServer.create();
-    const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
-    console.log(`Connected to In-Memory MongoDB at: ${uri}`);
+  const maxRetries = 3;
+  let connected = false;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Connecting to MongoDB at ${MONGODB_URI} (Attempt ${attempt}/${maxRetries})...`);
+      await mongoose.connect(MONGODB_URI, {
+        serverSelectionTimeoutMS: 3000
+      });
+      console.log(`Connected to MongoDB database at: ${MONGODB_URI}`);
+      connected = true;
+      break;
+    } catch (err) {
+      console.log(`MongoDB connection attempt ${attempt} failed: ${err.message}`);
+      if (attempt < maxRetries) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+  }
+
+  if (!connected) {
+    try {
+      console.log('MongoDB container/local connection failed. Starting mongodb-memory-server fallback...');
+      const { MongoMemoryServer } = require('mongodb-memory-server');
+      const mongoServer = await MongoMemoryServer.create();
+      const uri = mongoServer.getUri();
+      await mongoose.connect(uri);
+      console.log(`Connected to In-Memory MongoDB at: ${uri}`);
+    } catch (memErr) {
+      console.error('Fatal: Could not connect to MongoDB or start memory server:', memErr.message);
+    }
   }
 
   serverInstance = app.listen(PORT, () => {
