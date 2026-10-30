@@ -6,7 +6,8 @@ const Task = require('./models/Task');
 const PORT = 5000;
 const BASE_URL = `http://localhost:${PORT}`;
 
-// Helper to make HTTP request and record response time
+const keepAliveAgent = new http.Agent({ keepAlive: true });
+
 function makeRequest(method, path, body = null) {
   return new Promise((resolve, reject) => {
     const start = process.hrtime();
@@ -17,6 +18,7 @@ function makeRequest(method, path, body = null) {
       port: url.port,
       path: url.pathname + url.search,
       method: method,
+      agent: keepAliveAgent,
       headers: {
         'Content-Type': 'application/json'
       }

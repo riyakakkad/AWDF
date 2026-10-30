@@ -15,9 +15,10 @@ Applied **server-side in-memory caching** using `node-cache` on Express/MongoDB 
 - **Cache Invalidation:** Write operations (`POST`, `PUT`, `DELETE`) invalidate associated cache keys to guarantee zero stale data.
 - **Debug Endpoint (`GET /tasks/cache/stats`):** Exposes live hit count, miss count, hit ratio percentage, active key count, and memory stats.
 - **Empirical Performance Benchmarking (`server/benchmark.js`):**
-  - **Uncached Avg Response Time:** ~16.59 ms
-  - **Cached Avg Response Time:** ~0.75 ms
-  - **Performance Speedup:** **22.12x faster** (~95.48% latency reduction)
+  - **Uncached Avg Response Time:** ~12.27 ms
+  - **Cached Avg Response Time:** ~2.72 ms
+  - **Performance Speedup:** **4.51x faster** (~77.83% latency reduction)
+  - **Single Task Speedup:** **3.0x faster** (6.06 ms -> 2.02 ms)
 
 ### Running Backend Server & Benchmark:
 ```bash

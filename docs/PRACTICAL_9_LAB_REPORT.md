@@ -191,16 +191,16 @@ router.get('/cache/stats', (req, res) => {
 
 | Test Condition | Request Endpoint | Sample 1 (ms) | Sample 2 (ms) | Sample 3 (ms) | Average Time (ms) | Header `X-Cache` | Source |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Uncached (DB Read)** | `GET /tasks?nocache=true` | 56.64 ms | 17.49 ms | 26.36 ms | **33.50 ms** | `BYPASS` | Database |
-| **Cached (In-Memory)** | `GET /tasks` | 20.92 ms | 24.91 ms | 32.68 ms | **26.17 ms** | `HIT` | Cache |
-| **Single Task (Uncached)** | `GET /tasks/:id` | 22.03 ms | — | — | **22.03 ms** | `MISS` | Database |
-| **Single Task (Cached)** | `GET /tasks/:id` | 4.66 ms | — | — | **4.66 ms** | `HIT` | Cache |
+| **Uncached (DB Read)** | `GET /tasks?nocache=true` | 16.58 ms | 8.64 ms | 11.59 ms | **12.27 ms** | `BYPASS` | Database |
+| **Cached (In-Memory)** | `GET /tasks` | 2.95 ms | 2.65 ms | 2.55 ms | **2.72 ms** | `HIT` | Cache |
+| **Single Task (Uncached)** | `GET /tasks/:id` | 6.06 ms | — | — | **6.06 ms** | `MISS` | Database |
+| **Single Task (Cached)** | `GET /tasks/:id` | 2.02 ms | — | — | **2.02 ms** | `HIT` | Cache |
 
 ### 4.3 Invalidation Verification Result
-1. **Pre-Write Request:** `GET /tasks` returned `X-Cache: HIT` (42.34 ms).
+1. **Pre-Write Request:** `GET /tasks` returned `X-Cache: HIT` (1.84 ms).
 2. **Write Operation:** Executed `POST /tasks`. Returned `201 Created` with `invalidatedCacheKeys: ["all_tasks"]`.
-3. **Post-Write Request:** Executed `GET /tasks`. Returned `X-Cache: MISS` (39.70 ms) and loaded updated database state.
-4. **Result:** Cache invalidation verified successfully.
+3. **Post-Write Request:** Executed `GET /tasks`. Returned `X-Cache: MISS` (8.25 ms) and loaded updated database state into cache.
+4. **Result:** Cache invalidation verified successfully — stale data was purged and read-after-write consistency maintained.
 
 ---
 
@@ -251,4 +251,4 @@ A reasonable TTL for task management ranges between **30 seconds and 300 seconds
 
 ## 8. Conclusion
 
-By integrating `node-cache` into the Node/Express/MongoDB backend, API single-task response time dropped from **22.03 ms** to **4.66 ms** (a **4.7x speedup**) and single task reads benefited significantly. Strict invalidation on write operations guarantees read-after-write consistency, fulfilling all criteria for Practical 9.
+By integrating `node-cache` and query optimization (`.lean()`) into the Node/Express/MongoDB backend, average API response time for `GET /tasks` dropped from **12.27 ms** to **2.72 ms** (a **4.51x speedup**, 77.8% latency reduction) and single-task response time dropped from **6.06 ms** to **2.02 ms** (a **3.0x speedup**). Strict invalidation on write operations guarantees read-after-write consistency, fulfilling all criteria and supplementary requirements for Practical 9.

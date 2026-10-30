@@ -73,7 +73,7 @@ router.get('/', async (req, res) => {
 
     // 2. Cache miss or forced bypass -> Query MongoDB database
     recordMiss();
-    const tasks = await Task.find().sort({ createdAt: -1 });
+    const tasks = await Task.find().sort({ createdAt: -1 }).lean();
 
     // 3. Store in cache if not bypass
     if (!forceNoCache) {
@@ -125,7 +125,7 @@ router.get('/:id', async (req, res) => {
     }
 
     recordMiss();
-    const task = await Task.findById(taskId);
+    const task = await Task.findById(taskId).lean();
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
