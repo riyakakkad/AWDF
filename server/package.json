@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "benchmark": "node benchmark.js"
+    "benchmark": "node benchmark.js",
+    "events-benchmark": "node eventsBenchmark.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

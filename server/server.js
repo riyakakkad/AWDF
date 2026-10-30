@@ -28,8 +28,8 @@ app.use((req, res, next) => {
 // Root API Welcome Route
 app.get('/', (req, res) => {
   res.json({
-    message: 'Task Management API with In-Memory Caching (Practical 9)',
-    version: '1.0.0',
+    message: 'Task Management API with In-Memory Caching & Event-Driven Architecture (Practical 9 & 10)',
+    version: '1.1.0',
     endpoints: {
       getAllTasks: 'GET /tasks',
       getSingleTask: 'GET /tasks/:id',
@@ -37,7 +37,9 @@ app.get('/', (req, res) => {
       updateTask: 'PUT /tasks/:id',
       deleteTask: 'DELETE /tasks/:id',
       cacheStats: 'GET /tasks/cache/stats',
-      resetCache: 'POST /tasks/cache/reset'
+      resetCache: 'POST /tasks/cache/reset',
+      eventLogs: 'GET /tasks/events/logs',
+      triggerErrorEvent: 'POST /tasks/events/test-error'
     }
   });
 });

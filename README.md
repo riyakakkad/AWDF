@@ -4,6 +4,34 @@ This repository contains practical implementations and coursework for Advanced W
 
 ---
 
+## Practical 10: Asynchronous Background Processing with Node.js EventEmitter
+
+Implemented **event-driven architecture and asynchronous background processing** using Node.js's native `EventEmitter` module (`events`) to decouple notification processing from the HTTP request-response cycle.
+
+### Key Deliverables:
+- **Centralized Event Emitter Module (`server/events/taskEventEmitter.js`):** Custom `EventEmitter` instance with decoupled background handlers for `task:created`, `task:deleted`, and `error`.
+- **Custom Event (`task:created`):** Emitted on `POST /tasks`. Decoupled notification executes asynchronously in the background (~1500ms).
+- **Empirical Decoupling Proof:** Client receives API response in **~30.08 ms**, which is **1473.92 ms BEFORE** the background worker finishes!
+- **Additional Events:**
+  - `task:deleted`: Emitted on `DELETE /tasks/:id` for asynchronous audit logging and resource cleanup.
+  - `error`: Dedicated error listener preventing Node.js process crashes upon unhandled background exceptions.
+- **Audit & Monitoring Endpoint (`GET /tasks/events/logs`):** Exposes live event state, timestamps, and execution history.
+- **Automated Verification Suite (`server/eventsBenchmark.js`):** Empirical timing benchmark validating background execution precedence.
+
+### Running Practical 10 Benchmark:
+```bash
+# Navigate to server directory
+cd server
+
+# Run EventEmitter asynchronous benchmark
+npm run events-benchmark
+```
+
+For full architecture diagrams, sequence diagrams, and lab report, see [docs/PRACTICAL_10_LAB_REPORT.md](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/docs/PRACTICAL_10_LAB_REPORT.md).  
+Submission Word Document: [PRACTICAL_10.docx](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/PRACTICAL_10.docx).
+
+---
+
 ## Practical 9: In-Memory Caching and Query Optimization
 
 Applied **server-side in-memory caching** using `node-cache` on Express/MongoDB task management backend, cache invalidation logic for write operations (`POST`, `PUT`, `DELETE`), single-task endpoint caching (`GET /tasks/:id`), debug stats monitoring endpoint (`GET /tasks/cache/stats`), and empirical performance benchmarking.
