@@ -2,9 +2,38 @@
 
 [![CI/CD Pipeline](https://github.com/riyakakkad/AWDF/actions/workflows/ci.yml/badge.svg)](https://github.com/riyakakkad/AWDF/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/badge/Node.js-v20.x-green.svg)](https://nodejs.org/)
-[![Tests](https://img.shields.io/badge/Jest-6%20passed-brightgreen.svg)](https://jestjs.io/)
+[![Tests](https://img.shields.io/badge/Jest-12%20passed-brightgreen.svg)](https://jestjs.io/)
+[![AI-Integration](https://img.shields.io/badge/AI%20API-OpenAI%20GPT--4o--mini-blueviolet.svg)](https://platform.openai.com/)
 
 This repository contains practical implementations and coursework for Advanced Web Development Frameworks.
+
+---
+
+## Practical 13: AI API Integration into a Web Application
+
+Integrated an external AI service (**OpenAI GPT-4o-mini**) into the Task Management full-stack application to automatically analyze task titles and generate structured, editable task descriptions, suggested priorities, and deadlines with **secure server-side API key management** and **graceful degradation**.
+
+### Key Deliverables:
+- **Server-Side AI API Proxy (`POST /api/ai/generate-description`):** Secure Node/Express endpoint that consumes `process.env.OPENAI_API_KEY` strictly on the backend. The secret key is never sent, bundled, or exposed to the frontend browser network tab.
+- **Graceful Degradation Resilience:** If the third-party AI provider returns an error (401 Unauthorized, 429 Quota Exceeded, or timeout), the backend catches the failure and supplies an intelligent rule-based template with keyword-inferred priority (`low`, `medium`, `high`). The application remains 100% operational without crashing!
+- **Editable Suggestion UX (`student-portfolio/src/pages/Projects.jsx`):** Added a "✨ Generate Description" button on the task creation form. When clicked, it displays a loading state (`✨ Generating...`), fills the text input with the editable suggestion, and renders a prominent disclaimer banner (`🤖 AI-generated suggestion: Review & adjust before saving`).
+- **Responsible AI Measures:** Input sanitization (max 150 characters), rate-limiting (max 10 requests/min per IP to prevent quota abuse), and transparent labeling.
+- **Automated Test Coverage (`server/tests/ai.test.js`):** 6 automated Jest & Supertest tests validating status diagnostics, input validation, external model success path, graceful fallback on 401 errors, and demo mode.
+
+### Running AI Feature Locally:
+```bash
+# Navigate to server directory
+cd server
+
+# Configure your API key in .env (or use demo mode)
+# OPENAI_API_KEY=your_key_here
+
+# Run all 12 automated unit & integration tests
+npm test
+```
+
+For full architecture diagrams, security audits, and lab report, see [docs/PRACTICAL_13_LAB_REPORT.md](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/docs/PRACTICAL_13_LAB_REPORT.md).  
+Submission Word Document: [PRACTICAL_13.docx](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/PRACTICAL_13.docx).
 
 ---
 

@@ -6,6 +6,7 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  generateAiDescription,
 } from "../api";
 import { lazyWithDelay } from "../utils/lazyWithDelay";
 
@@ -29,6 +30,10 @@ function Projects() {
 
   const [editingId, setEditingId] = useState(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
+
+  // Practical 13: AI Assistant States
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiNotice, setAiNotice] = useState(null);
 
   useEffect(() => {
     getTasks()
@@ -70,6 +75,46 @@ function Projects() {
     setTitle("");
     setDescription("");
     setPriority("low");
+    setAiNotice(null);
+  };
+
+  // Practical 13: AI Generation with graceful failure handling
+  const handleAiGenerate = async () => {
+    if (!title.trim()) {
+      setAiNotice({
+        type: "warning",
+        text: "Please enter a task title first so the AI assistant knows what to describe."
+      });
+      return;
+    }
+
+    setAiLoading(true);
+    setAiNotice(null);
+
+    try {
+      const res = await generateAiDescription(title.trim());
+      if (res.description) {
+        setDescription(res.description);
+      }
+      if (res.suggestedPriority) {
+        setPriority(res.suggestedPriority);
+      }
+      setAiNotice({
+        type: res.fallback ? "fallback" : "success",
+        text: res.disclaimer || (res.fallback ? "Rule-based fallback template generated." : "AI suggestion generated successfully!"),
+        source: res.source
+      });
+    } catch (err) {
+      // Graceful client-side degradation if backend/network is completely unreachable
+      setDescription(`Action plan for "${title}": Complete specifications, review code, and verify tests.`);
+      setAiNotice({
+        type: "fallback",
+        text: "Network/Server offline. Client-side fallback template generated. Please review.",
+        source: "client-fallback"
+      });
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const handleEdit = (task) => {
@@ -77,6 +122,7 @@ function Projects() {
     setTitle(task.title);
     setDescription(task.description);
     setPriority(task.priority);
+    setAiNotice(null);
   };
 
   const handleUpdate = async (e) => {
@@ -110,6 +156,7 @@ function Projects() {
     setTitle("");
     setDescription("");
     setPriority("low");
+    setAiNotice(null);
   };
 
   const handleDelete = async (id) => {
@@ -145,14 +192,24 @@ function Projects() {
         <form onSubmit={editingId ? handleUpdate : handleCreate} className="task-form">
           <input
             type="text"
-            placeholder="Task title"
+            placeholder="Task title (e.g. Implement OAuth Login)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
 
+          {/* Practical 13: Generate Description AI Button */}
+          <button
+            type="button"
+            className="ai-btn"
+            onClick={handleAiGenerate}
+            disabled={aiLoading || !title.trim()}
+          >
+            {aiLoading ? "✨ Generating..." : "✨ Generate Description"}
+          </button>
+
           <input
             type="text"
-            placeholder="Task description"
+            placeholder="Task description (Editable AI suggestion)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -169,6 +226,18 @@ function Projects() {
             {editingId ? "Update Task" : "Add Task"}
           </button>
         </form>
+
+        {/* Practical 13: Responsible AI Disclaimer / Status Notice */}
+        {aiNotice && (
+          <div className={`ai-disclaimer ${aiNotice.type}`}>
+            <span>
+              {aiNotice.type === "success" && "🤖 "}
+              {aiNotice.type === "fallback" && "🛡️ "}
+              {aiNotice.type === "warning" && "⚠️ "}
+              {aiNotice.text}
+            </span>
+          </div>
+        )}
 
         <div className="task-list">
           {tasks.length === 0 ? (

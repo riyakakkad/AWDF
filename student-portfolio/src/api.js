@@ -45,3 +45,26 @@ export const deleteTask = (id) =>
     }
     return res.json();
   });
+
+// Practical 13: External AI API Integration (Server-side proxy)
+export const generateAiDescription = (title) =>
+  fetch(`${BASE_URL}/api/ai/generate-description`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ title }),
+  }).then(async (res) => {
+    if (!res.ok) {
+      throw new Error("Failed to generate AI description");
+    }
+    return res.json();
+  });
+
+export const getAiStatus = () =>
+  fetch(`${BASE_URL}/api/ai/status`).then(async (res) => {
+    if (!res.ok) {
+      throw new Error("Failed to fetch AI status");
+    }
+    return res.json();
+  });

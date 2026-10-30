@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const taskRoutes = require('./routes/taskRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 dotenv.config();
 
@@ -28,8 +29,8 @@ app.use((req, res, next) => {
 // Root API Welcome Route
 app.get('/', (req, res) => {
   res.json({
-    message: 'Task Management API with In-Memory Caching & Event-Driven Architecture (Practical 9 & 10)',
-    version: '1.1.0',
+    message: 'Task Management API with In-Memory Caching, Event-Driven Architecture & Responsible AI Integration (Practicals 9-13)',
+    version: '1.3.0',
     endpoints: {
       getAllTasks: 'GET /tasks',
       getSingleTask: 'GET /tasks/:id',
@@ -39,13 +40,18 @@ app.get('/', (req, res) => {
       cacheStats: 'GET /tasks/cache/stats',
       resetCache: 'POST /tasks/cache/reset',
       eventLogs: 'GET /tasks/events/logs',
-      triggerErrorEvent: 'POST /tasks/events/test-error'
+      triggerErrorEvent: 'POST /tasks/events/test-error',
+      aiGenerateDescription: 'POST /api/ai/generate-description',
+      aiSuggestTask: 'POST /api/ai/suggest-task',
+      aiStatus: 'GET /api/ai/status'
     }
   });
 });
 
-// Mount Task Routes
+// Mount Routes
 app.use('/tasks', taskRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/tasks/ai', aiRoutes);
 
 // MongoDB connection logic with automated container retry & fallback
 let serverInstance;
