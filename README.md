@@ -1,6 +1,44 @@
 # Advanced Web Development Frameworks (ITUE301)
 
+[![CI/CD Pipeline](https://github.com/riyakakkad/AWDF/actions/workflows/ci.yml/badge.svg)](https://github.com/riyakakkad/AWDF/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-v20.x-green.svg)](https://nodejs.org/)
+[![Tests](https://img.shields.io/badge/Jest-6%20passed-brightgreen.svg)](https://jestjs.io/)
+
 This repository contains practical implementations and coursework for Advanced Web Development Frameworks.
+
+---
+
+## Practical 12: CI/CD Pipeline with GitHub Actions
+
+Implemented an automated **Continuous Integration & Continuous Deployment (CI/CD)** pipeline using **GitHub Actions** to automate static linting, frontend bundle verification, and automated API integration testing on every commit and pull request.
+
+### Key Deliverables:
+- **GitHub Actions Workflow (`.github/workflows/ci.yml`):** Automatically triggered on every `push` to `main` and `pull_request` targeting `main`.
+- **Job 1: Frontend Lint & Build (`lint-and-frontend`):** Executes on `ubuntu-latest` with Node.js 20, runs static code analysis via `oxlint` (`npm run lint`), and verifies production bundling via Vite (`npm run build`).
+- **Job 2: Backend API Automated Tests (`backend-test`):** Executes in `server/` with Node.js 20, installs dependencies via `npm ci` / `npm install`, and runs Jest test suite (`npm test`).
+- **Automated Test Suite (`server/tests/task.test.js`):** Comprehensive integration tests verifying:
+  - `GET /` (Welcome route returns 200 and API metadata)
+  - `GET /tasks` (Returns 200 and task array)
+  - `POST /tasks` (Creates task and returns 201 with background event metadata)
+  - `GET /tasks` (Verifies in-memory caching: cache MISS on first query, cache HIT on second query)
+  - `GET /tasks/events/logs` (Returns 200 with background EventEmitter logs)
+  - `GET /tasks/cache/stats` (Returns 200 with cache performance metrics)
+- **Deliberate Failure & Fix Demonstration:**
+  - Demonstrated pipeline failure (Red X) by asserting non-existent property on test assertion (exit code 1).
+  - Corrected test assertion to turn the GitHub Actions pipeline green (exit code 0).
+- **Status Badge:** Live GitHub Actions status badge embedded at the top of the repository.
+
+### Running Tests Locally:
+```bash
+# Navigate to server directory
+cd server
+
+# Run automated Jest test suite
+npm test
+```
+
+For full pipeline logs, test outputs, and lab report, see [docs/PRACTICAL_12_LAB_REPORT.md](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/docs/PRACTICAL_12_LAB_REPORT.md).  
+Submission Word Document: [PRACTICAL_12.docx](file:///c:/Users/sanja/OneDrive/Desktop/AWDF/PRACTICAL_12.docx).
 
 ---
 
