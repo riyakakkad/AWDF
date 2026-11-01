@@ -34,7 +34,7 @@ function makeRequest(method, path, body = null) {
         let parsed = {};
         try {
           parsed = JSON.parse(data);
-        } catch (e) {
+        } catch {
           parsed = { raw: data };
         }
         resolve({

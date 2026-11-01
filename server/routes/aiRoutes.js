@@ -86,7 +86,7 @@ router.post('/suggest-task', async (req, res) => {
       success: true,
       data: result
     });
-  } catch (err) {
+  } catch {
     res.status(200).json({
       success: true,
       data: {

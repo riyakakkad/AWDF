@@ -32,7 +32,7 @@ function makeRequest(method, path, body = null) {
         let parsed = {};
         try {
           parsed = JSON.parse(data);
-        } catch (e) {
+        } catch {
           parsed = { raw: data };
         }
         resolve({
@@ -71,7 +71,6 @@ async function runEventsBenchmark() {
     console.log('\n--- 1. Testing Decoupled "task:created" Event & Background Notification ---');
     console.log('Sending POST /tasks to create a new task...');
     
-    const postStart = Date.now();
     const createRes = await makeRequest('POST', '/tasks', {
       title: 'Practical 10: Event-Driven Background Worker Demo',
       description: 'Demonstrating that API response arrives before background notification completes',
@@ -79,7 +78,6 @@ async function runEventsBenchmark() {
       priority: 'high'
     });
 
-    const apiResponseReceivedAt = Date.now();
     const apiLatency = createRes.timeMs;
     const createdTask = createRes.data.data;
 

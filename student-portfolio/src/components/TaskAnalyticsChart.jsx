@@ -9,7 +9,6 @@ function TaskAnalyticsChart({ tasks = [] }) {
   const highPriority = tasks.filter((t) => t.priority === "high").length;
   const lowPriority = tasks.filter((t) => t.priority === "low").length;
   const completed = tasks.filter((t) => t.completed).length;
-  const pending = total - completed;
 
   const highPct = total > 0 ? Math.round((highPriority / total) * 100) : 0;
   const lowPct = total > 0 ? Math.round((lowPriority / total) * 100) : 0;

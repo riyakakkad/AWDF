@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Spinner from "../components/Spinner";
 import ErrorMessage from "../components/ErrorMessage";
 import {
@@ -22,7 +22,7 @@ const SAMPLE_TASKS = [
 function Projects() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -40,7 +40,7 @@ function Projects() {
       .then((data) => {
         setTasks(data);
       })
-      .catch((err) => {
+      .catch(() => {
         console.warn("Backend API offline at http://localhost:5000, using sample tasks for preview.");
         setTasks(SAMPLE_TASKS);
       })
@@ -60,7 +60,7 @@ function Projects() {
         priority,
       });
       setTasks((prev) => [...prev, newTask]);
-    } catch (err) {
+    } catch {
       // Offline fallback
       const offlineTask = {
         _id: String(Date.now()),
@@ -104,7 +104,7 @@ function Projects() {
         text: res.disclaimer || (res.fallback ? "Rule-based fallback template generated." : "AI suggestion generated successfully!"),
         source: res.source
       });
-    } catch (err) {
+    } catch {
       // Graceful client-side degradation if backend/network is completely unreachable
       setDescription(`Action plan for "${title}": Complete specifications, review code, and verify tests.`);
       setAiNotice({
@@ -141,7 +141,7 @@ function Projects() {
           (task._id || task.id) === editingId ? updatedTask : task
         )
       );
-    } catch (err) {
+    } catch {
       // Offline fallback
       setTasks((prev) =>
         prev.map((task) =>
@@ -162,7 +162,7 @@ function Projects() {
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
-    } catch (err) {
+    } catch {
       console.warn("Backend offline, removing task from local state.");
     }
     setTasks((prev) => prev.filter((task) => (task._id || task.id) !== id));
