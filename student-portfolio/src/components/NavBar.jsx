@@ -19,6 +19,10 @@ function NavBar() {
         Projects
       </Link>
 
+      <Link to="/tasks" style={{ color: "white", textDecoration: "none" }}>
+        Tasks
+      </Link>
+
       <Link to="/contact" style={{ color: "white", textDecoration: "none" }}>
         Contact
       </Link>

@@ -10,6 +10,7 @@ import { lazyWithDelay } from "./utils/lazyWithDelay";
 // Route-based Code Splitting using React.lazy with delay helper
 const Home = lazyWithDelay(() => import("./pages/Home"));
 const Projects = lazyWithDelay(() => import("./pages/Projects"));
+const Tasks = lazyWithDelay(() => import("./pages/Tasks"));
 const Contact = lazyWithDelay(() => import("./pages/Contact"));
 const NotFound = lazyWithDelay(() => import("./pages/NotFound"));
 
@@ -22,6 +23,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/contact" element={<Contact />} />
 
           <Route path="*" element={<NotFound />} />
