@@ -22,7 +22,7 @@ const SAMPLE_TASKS = [
 function Projects() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error] = useState(null);
+  const [error, setError] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -36,17 +36,46 @@ function Projects() {
   const [aiNotice, setAiNotice] = useState(null);
 
   useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
     getTasks()
-      .then((data) => {
-        setTasks(data);
+      .then((res) => {
+        if (!isMounted) return;
+
+        if (res && res.error) {
+          setError(res.error);
+          setTasks([]);
+          return;
+        }
+
+        // The API returns { source, cacheStatus, responseTimeMs, count, data: [...] }
+        // or a direct array if formatted as [...]
+        const taskList = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
+
+        setTasks(taskList);
+        setError(null);
       })
-      .catch(() => {
-        console.warn("Backend API offline at http://localhost:5000, using sample tasks for preview.");
+      .catch((err) => {
+        if (!isMounted) return;
+        console.warn("Backend API offline at http://localhost:5000, using sample tasks for preview.", err);
         setTasks(SAMPLE_TASKS);
+        setError(null);
       })
       .finally(() => {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleCreate = async (e) => {
@@ -54,12 +83,15 @@ function Projects() {
     if (!title.trim()) return;
 
     try {
-      const newTask = await createTask({
+      const res = await createTask({
         title,
         description,
         priority,
       });
-      setTasks((prev) => [...prev, newTask]);
+      // Extract task entity from { message: '...', data: newTask } or raw task
+      const newTask = res?.data || res;
+      setTasks((prev) => (Array.isArray(prev) ? [...prev, newTask] : [newTask]));
+      setError(null);
     } catch {
       // Offline fallback
       const offlineTask = {
@@ -69,7 +101,7 @@ function Projects() {
         priority,
         completed: false,
       };
-      setTasks((prev) => [...prev, offlineTask]);
+      setTasks((prev) => (Array.isArray(prev) ? [...prev, offlineTask] : [offlineTask]));
     }
 
     setTitle("");
@@ -127,24 +159,29 @@ function Projects() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!editingId) return;
 
     try {
-      const updatedTask = await updateTask(editingId, {
+      const res = await updateTask(editingId, {
         title,
         description,
         priority,
         completed: false,
       });
 
+      // Extract task entity from { message: '...', data: updatedTask } or raw task
+      const updatedTask = res?.data || res;
+
       setTasks((prev) =>
-        prev.map((task) =>
+        (Array.isArray(prev) ? prev : []).map((task) =>
           (task._id || task.id) === editingId ? updatedTask : task
         )
       );
+      setError(null);
     } catch {
       // Offline fallback
       setTasks((prev) =>
-        prev.map((task) =>
+        (Array.isArray(prev) ? prev : []).map((task) =>
           (task._id || task.id) === editingId
             ? { ...task, title, description, priority }
             : task
@@ -162,19 +199,28 @@ function Projects() {
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
+      setError(null);
     } catch {
       console.warn("Backend offline, removing task from local state.");
     }
-    setTasks((prev) => prev.filter((task) => (task._id || task.id) !== id));
+    setTasks((prev) => (Array.isArray(prev) ? prev : []).filter((task) => (task._id || task.id) !== id));
   };
 
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+
   if (loading) return <Spinner />;
-  if (error) return <ErrorMessage message={error} />;
+  if (error && safeTasks.length === 0) return <ErrorMessage message={error} />;
 
   return (
     <div className="container">
       <div className="card">
         <h1>My Tasks & Projects</h1>
+
+        {error && (
+          <div style={{ marginBottom: "1rem" }}>
+            <ErrorMessage message={error} />
+          </div>
+        )}
 
         <button
           className="analytics-toggle-btn"
@@ -185,7 +231,7 @@ function Projects() {
 
         {showAnalytics && (
           <Suspense fallback={<div className="spinner">Loading chart chunk...</div>}>
-            <TaskAnalyticsChart tasks={tasks} />
+            <TaskAnalyticsChart tasks={safeTasks} />
           </Suspense>
         )}
 
@@ -240,10 +286,10 @@ function Projects() {
         )}
 
         <div className="task-list">
-          {tasks.length === 0 ? (
+          {safeTasks.length === 0 ? (
             <p>No tasks found. Add a task above!</p>
           ) : (
-            tasks.map((task) => (
+            safeTasks.map((task) => (
               <div key={task._id || task.id} className="task-item">
                 <h3>{task.title}</h3>
                 <p>{task.description}</p>

@@ -5,10 +5,11 @@ import React from "react";
  * Demonstrates component-level code splitting beyond route-level code splitting.
  */
 function TaskAnalyticsChart({ tasks = [] }) {
-  const total = tasks.length;
-  const highPriority = tasks.filter((t) => t.priority === "high").length;
-  const lowPriority = tasks.filter((t) => t.priority === "low").length;
-  const completed = tasks.filter((t) => t.completed).length;
+  const safeList = Array.isArray(tasks) ? tasks : [];
+  const total = safeList.length;
+  const highPriority = safeList.filter((t) => t.priority === "high").length;
+  const lowPriority = safeList.filter((t) => t.priority === "low").length;
+  const completed = safeList.filter((t) => t.completed).length;
 
   const highPct = total > 0 ? Math.round((highPriority / total) * 100) : 0;
   const lowPct = total > 0 ? Math.round((lowPriority / total) * 100) : 0;
