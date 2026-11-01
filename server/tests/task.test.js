@@ -135,4 +135,57 @@ describe('Task Management API Test Suite - GitHub Actions CI Pipeline', () => {
     expect(res.body.data).toHaveProperty('misses');
     expect(res.body.data).toHaveProperty('cachedKeysCount');
   });
+
+  // Test 7: PUT /tasks/:id successfully updates task details
+  test('PUT /tasks/:id successfully updates title, description and priority', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    const updatePayload = {
+      title: 'Updated Task Title',
+      description: 'Updated Task Description',
+      priority: 'high'
+    };
+
+    const updatedTask = {
+      _id: validId,
+      ...updatePayload,
+      status: 'pending'
+    };
+
+    Task.findByIdAndUpdate.mockResolvedValue(updatedTask);
+
+    const res = await request(app)
+      .put(`/tasks/${validId}`)
+      .send(updatePayload);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('data');
+    expect(res.body.data.title).toBe(updatePayload.title);
+    expect(res.body.data.description).toBe(updatePayload.description);
+    expect(res.body.data.priority).toBe(updatePayload.priority);
+  });
+
+  // Test 8: PUT /tasks/:id rejects invalid ObjectId format with 400
+  test('PUT /tasks/:id returns 400 for invalid ObjectId format', async () => {
+    const res = await request(app)
+      .put('/tasks/invalid-id-format')
+      .send({ title: 'New Title' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toMatch(/invalid task ID/i);
+  });
+
+  // Test 9: PUT /tasks/:id returns 404 when task not found
+  test('PUT /tasks/:id returns 404 when task is not found', async () => {
+    const validId = '507f1f77bcf86cd799439011';
+    Task.findByIdAndUpdate.mockResolvedValue(null);
+
+    const res = await request(app)
+      .put(`/tasks/${validId}`)
+      .send({ title: 'Non-existent Task' });
+
+    expect(res.statusCode).toBe(404);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toMatch(/task not found/i);
+  });
 });

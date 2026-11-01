@@ -23,6 +23,7 @@ function Tasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusMessage, setStatusMessage] = useState(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -35,42 +36,39 @@ function Tasks() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiNotice, setAiNotice] = useState(null);
 
+  const loadTasks = async () => {
+    try {
+      const res = await getTasks();
+      if (res && res.error) {
+        setError(res.error);
+        return;
+      }
+
+      // Safely extract array from API response envelope { data: [...] } or direct array [...]
+      const taskList = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+        ? res.data
+        : [];
+
+      setTasks(taskList);
+      setError(null);
+    } catch (err) {
+      console.warn("Backend API offline at http://localhost:5000, using sample tasks for preview.", err);
+      setTasks(SAMPLE_TASKS);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setError(null);
 
-    getTasks()
-      .then((res) => {
-        if (!isMounted) return;
-
-        if (res && res.error) {
-          setError(res.error);
-          setTasks([]);
-          return;
-        }
-
-        // Safely extract array from API response envelope { data: [...] } or direct array [...]
-        const taskList = Array.isArray(res)
-          ? res
-          : Array.isArray(res?.data)
-          ? res.data
-          : [];
-
-        setTasks(taskList);
-        setError(null);
-      })
-      .catch((err) => {
-        if (!isMounted) return;
-        console.warn("Backend API offline at http://localhost:5000, using sample tasks for preview.", err);
-        setTasks(SAMPLE_TASKS);
-        setError(null);
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
+    loadTasks().finally(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    });
 
     return () => {
       isMounted = false;
@@ -79,28 +77,44 @@ function Tasks() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setStatusMessage({
+        type: "error",
+        text: "Please enter a task title.",
+      });
+      return;
+    }
 
     try {
       const res = await createTask({
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         priority,
       });
-      // Extract task entity from { message: '...', data: newTask } or raw task
+
       const newTask = res?.data || res;
-      setTasks((prev) => (Array.isArray(prev) ? [...prev, newTask] : [newTask]));
+      // Refresh task list from the server to guarantee sync with MongoDB
+      await loadTasks();
+
+      setStatusMessage({
+        type: "success",
+        text: `Task "${newTask.title || title.trim()}" created successfully!`,
+      });
       setError(null);
     } catch {
       // Offline fallback
       const offlineTask = {
         _id: String(Date.now()),
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         priority,
         completed: false,
       };
       setTasks((prev) => (Array.isArray(prev) ? [...prev, offlineTask] : [offlineTask]));
+      setStatusMessage({
+        type: "success",
+        text: `Task "${title.trim()}" created (saved in offline preview mode).`,
+      });
     }
 
     setTitle("");
@@ -149,10 +163,22 @@ function Tasks() {
   };
 
   const handleEdit = (task) => {
-    setEditingId(task._id || task.id);
-    setTitle(task.title);
-    setDescription(task.description);
-    setPriority(task.priority);
+    const taskId = task._id || task.id;
+    setEditingId(taskId);
+    setTitle(task.title || "");
+    setDescription(task.description || "");
+    setPriority(task.priority || "medium");
+    setStatusMessage(null);
+    setAiNotice(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setTitle("");
+    setDescription("");
+    setPriority("low");
+    setStatusMessage(null);
     setAiNotice(null);
   };
 
@@ -160,32 +186,46 @@ function Tasks() {
     e.preventDefault();
     if (!editingId) return;
 
+    if (!title.trim()) {
+      setStatusMessage({
+        type: "error",
+        text: "Task title cannot be empty.",
+      });
+      return;
+    }
+
     try {
       const res = await updateTask(editingId, {
-        title,
-        description,
+        title: title.trim(),
+        description: description.trim(),
         priority,
-        completed: false,
       });
 
       // Extract task entity from { message: '...', data: updatedTask } or raw task
       const updatedTask = res?.data || res;
 
-      setTasks((prev) =>
-        (Array.isArray(prev) ? prev : []).map((task) =>
-          (task._id || task.id) === editingId ? updatedTask : task
-        )
-      );
+      // Refresh task list from the server to guarantee MongoDB sync (Requirement 5)
+      await loadTasks();
+
+      setStatusMessage({
+        type: "success",
+        text: `Task "${updatedTask.title || title.trim()}" updated successfully in MongoDB!`,
+      });
       setError(null);
-    } catch {
+    } catch (err) {
+      console.warn("Update task API failed, falling back to local state:", err);
       // Offline fallback
       setTasks((prev) =>
         (Array.isArray(prev) ? prev : []).map((task) =>
           (task._id || task.id) === editingId
-            ? { ...task, title, description, priority }
+            ? { ...task, title: title.trim(), description: description.trim(), priority }
             : task
         )
       );
+      setStatusMessage({
+        type: "error",
+        text: `Failed to update task on server (${err.message || 'Network error'}). Updated in local preview.`,
+      });
     }
 
     setEditingId(null);
@@ -198,11 +238,21 @@ function Tasks() {
   const handleDelete = async (id) => {
     try {
       await deleteTask(id);
+      // Refresh task list from server to guarantee sync
+      await loadTasks();
+      setStatusMessage({
+        type: "success",
+        text: "Task deleted successfully!",
+      });
       setError(null);
     } catch {
       console.warn("Backend offline, removing task from local state.");
+      setTasks((prev) => (Array.isArray(prev) ? prev : []).filter((task) => (task._id || task.id) !== id));
+      setStatusMessage({
+        type: "error",
+        text: "Backend offline. Removed task from local state.",
+      });
     }
-    setTasks((prev) => (Array.isArray(prev) ? prev : []).filter((task) => (task._id || task.id) !== id));
   };
 
   const safeTasks = Array.isArray(tasks) ? tasks : [];
@@ -215,9 +265,45 @@ function Tasks() {
       <div className="card">
         <h1>My Tasks & Projects</h1>
 
+        {/* Global error message */}
         {error && (
           <div style={{ marginBottom: "1rem" }}>
             <ErrorMessage message={error} />
+          </div>
+        )}
+
+        {/* Status message (Success / Error notification) */}
+        {statusMessage && (
+          <div
+            className={`ai-disclaimer ${statusMessage.type === "success" ? "success" : "warning"}`}
+            style={{
+              margin: "12px auto",
+              maxWidth: "600px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <span>
+              {statusMessage.type === "success" ? "✅ " : "❌ "}
+              {statusMessage.text}
+            </span>
+            <button
+              type="button"
+              onClick={() => setStatusMessage(null)}
+              style={{
+                background: "transparent",
+                color: "inherit",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px 8px",
+                fontSize: "14px",
+                fontWeight: "bold",
+              }}
+              title="Dismiss"
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -232,6 +318,38 @@ function Tasks() {
           <Suspense fallback={<div className="spinner">Loading chart chunk...</div>}>
             <TaskAnalyticsChart tasks={safeTasks} />
           </Suspense>
+        )}
+
+        {/* Active Edit Mode Banner */}
+        {editingId && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              padding: "10px 16px",
+              borderRadius: "8px",
+              margin: "12px auto",
+              maxWidth: "600px",
+            }}
+          >
+            <span style={{ fontSize: "14px", color: "#1e40af" }}>
+              ✏️ Editing Task: <strong>{title || "Untitled Task"}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              style={{
+                background: "#6b7280",
+                padding: "6px 14px",
+                fontSize: "13px",
+              }}
+            >
+              Cancel Edit
+            </button>
+          </div>
         )}
 
         <form onSubmit={editingId ? handleUpdate : handleCreate} className="task-form">
@@ -264,12 +382,23 @@ function Tasks() {
             onChange={(e) => setPriority(e.target.value)}
           >
             <option value="low">Low Priority</option>
+            <option value="medium">Medium Priority</option>
             <option value="high">High Priority</option>
           </select>
 
           <button type="submit">
             {editingId ? "Update Task" : "Add Task"}
           </button>
+
+          {editingId && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              style={{ background: "#9ca3af" }}
+            >
+              Cancel
+            </button>
+          )}
         </form>
 
         {/* Practical 13: Responsible AI Disclaimer / Status Notice */}

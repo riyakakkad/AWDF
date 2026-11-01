@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const {
   cache,
@@ -255,7 +256,20 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const taskId = req.params.id;
-    const updatedTask = await Task.findByIdAndUpdate(taskId, req.body, {
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ error: 'Invalid Task ID format' });
+    }
+
+    const { title, description, priority, status, completed, dueDate } = req.body;
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (priority !== undefined) updateData.priority = priority;
+    if (status !== undefined) updateData.status = status;
+    if (completed !== undefined) updateData.completed = completed;
+    if (dueDate !== undefined) updateData.dueDate = dueDate;
+
+    const updatedTask = await Task.findByIdAndUpdate(taskId, updateData, {
       new: true,
       runValidators: true
     });
