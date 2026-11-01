@@ -170,7 +170,23 @@ function Tasks() {
     setPriority(task.priority || "medium");
     setStatusMessage(null);
     setAiNotice(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Safely scroll to top and focus title input so user can type immediately
+    if (typeof window !== "undefined") {
+      if (typeof window.scrollTo === "function") {
+        try {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch {
+          // Fallback if scrollTo is not supported in test environments
+        }
+      }
+      setTimeout(() => {
+        const titleInput = document.getElementById("title");
+        if (titleInput) {
+          titleInput.focus();
+        }
+      }, 50);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -355,9 +371,15 @@ function Tasks() {
         <form onSubmit={editingId ? handleUpdate : handleCreate} className="task-form">
           <input
             type="text"
+            id="title"
+            name="title"
             placeholder="Task title (e.g. Implement OAuth Login)"
-            value={title}
+            value={title || ""}
             onChange={(e) => setTitle(e.target.value)}
+            disabled={false}
+            readOnly={false}
+            autoComplete="off"
+            aria-label="Task title"
           />
 
           {/* Practical 13: Generate Description AI Button */}
@@ -372,14 +394,24 @@ function Tasks() {
 
           <input
             type="text"
+            id="description"
+            name="description"
             placeholder="Task description (Editable AI suggestion)"
-            value={description}
+            value={description || ""}
             onChange={(e) => setDescription(e.target.value)}
+            disabled={false}
+            readOnly={false}
+            autoComplete="off"
+            aria-label="Task description"
           />
 
           <select
-            value={priority}
+            id="priority"
+            name="priority"
+            value={priority || "medium"}
             onChange={(e) => setPriority(e.target.value)}
+            disabled={false}
+            aria-label="Task priority"
           >
             <option value="low">Low Priority</option>
             <option value="medium">Medium Priority</option>
